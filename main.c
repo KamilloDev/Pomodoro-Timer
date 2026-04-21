@@ -2,25 +2,58 @@
 
 #define SCREEN_WIDTH 720
 #define SCREEN_HEIGHT 720
+#define TEXT_SIZE 120
+
+const int TIME = 20;
+bool timerActive = true;
+
+double TimePassed;
+double timeInMinutes;
+double timeInSeconds;
+int timeLeft = TIME;
+
+void HandleInput() {
+	if (IsKeyPressed(KEY_SPACE)) {
+		timerActive = !timerActive;
+	}
+}
+
+void CountDown() {
+	if (timerActive) {
+		
+		TimePassed += ((double)(1.0 / 60) * (double)(GetFrameTime() * 60));
+		timeInMinutes = (TIME - (int)TimePassed) / 60;
+		timeInSeconds = (TIME - (int)TimePassed) % 60;
+		timeLeft = TIME - (int)TimePassed;
+	}
+}
+
 
 int main() {
   InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Pomodoro Timer");
   SetTargetFPS(60);
-
-  const int TIME = 60;
-  
   
   while (!WindowShouldClose()) {
-	double timeInMinutes = (TIME - (int)GetTime()) / 60;
-	double timeInSeconds = (TIME - (int)GetTime()) % 60;
-	int timeLeft = TIME - (int)GetTime();
+	HandleInput();
+	CountDown();
 	
     BeginDrawing();
     	ClearBackground(RAYWHITE);
 		if (timeLeft > 0) {
-			DrawText(TextFormat("%.0f : %.0f", timeInMinutes, timeInSeconds), SCREEN_WIDTH / 2 - 60, SCREEN_HEIGHT / 2, 60, BLACK);
+			if (timeInMinutes < 10 && timeInSeconds < 10) {
+				DrawText(TextFormat("0%.0f:0%.0f", timeInMinutes, timeInSeconds), SCREEN_WIDTH / 2 - TEXT_SIZE, SCREEN_HEIGHT / 2, TEXT_SIZE, BLACK);
+			}
+			else if (timeInMinutes < 10) {
+				DrawText(TextFormat("0%.0f:%.0f", timeInMinutes, timeInSeconds), SCREEN_WIDTH / 2 - TEXT_SIZE, SCREEN_HEIGHT / 2, TEXT_SIZE, BLACK);
+			}
+			else if (timeInSeconds < 10) {
+				DrawText(TextFormat("%.0f:0%.0f", timeInMinutes, timeInSeconds), SCREEN_WIDTH / 2 - TEXT_SIZE, SCREEN_HEIGHT / 2, TEXT_SIZE, BLACK);
+			}
+			else {
+				DrawText(TextFormat("%.0f:%.0f", timeInMinutes, timeInSeconds), SCREEN_WIDTH / 2 - TEXT_SIZE, SCREEN_HEIGHT / 2, TEXT_SIZE, BLACK);
+			}
 		} else {
-			DrawText("TIME RUN OUT", SCREEN_WIDTH / 2 - 60, SCREEN_HEIGHT / 2, 60, RED);
+			DrawText("00:00", SCREEN_WIDTH / 2 - TEXT_SIZE, SCREEN_HEIGHT / 2, TEXT_SIZE, RED);
 		}
 
     EndDrawing();
