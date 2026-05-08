@@ -1,3 +1,10 @@
+PC:
 gcc main.c -o main -I./include -L./lib -lraylib -lopengl32 -lgdi32 -lwinmm
 
 gcc main.c -o main -I./include -L./lib -lraylib -lopengl32 -lgdi32 -lwinmm && ./main
+
+Pi:
+gcc main.c -o timer -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 && ./timer
+
+gcc main.c -o timer -lraylib -lm -lpthread -lGLESv2 -lEGL -lgbm -ldrm && ./timer
+
