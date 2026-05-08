@@ -60,7 +60,7 @@ void HandleInput() {
         Vector2 delta = Vector2Subtract(lastPos, startPos);
         float len = Vector2Length(delta);
 
-        if (len < 20.0f) {
+        if (len < 20.0f && !realTime) {
             // It's a tap — toggle timer
             timerActive = !timerActive;
             if (!timerActive) pauseStart = GetTime();
