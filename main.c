@@ -1,7 +1,7 @@
 #include "raylib.h"
 #include "raymath.h"
 #include "time.h"
-
+#include "stdio.h"
 
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 480
@@ -11,14 +11,14 @@
 bool timerActive = false;
 bool realTime = false;
 bool timerPause = false;
-int TIME = 15;
+int TIME = 1800;
 
 double pauseOffset = 0.0;
 double pauseStart = 0.0;
 
 double timeInMinutes;
 double timeInSeconds;
-int timeLeft = 1500;
+int timeLeft = 1800;
 
 Vector2 startPos = { 0 };
 Vector2 lastPos = { 0 };  // add this
@@ -113,9 +113,14 @@ void CountDown() {
 		timeInMinutes = timeLeft / 60;
 		timeInSeconds = timeLeft % 60;
 	}
-	if (timeLeft <= 0) {
+	if (timeLeft <= 0 && timerPause != true) {
 		timerPause = true;
 		timeLeft = 300;
+		TIME = 300;
+	} else if (timeLeft <= 0){
+		timerPause = false;
+		timeLeft = 1800;
+		TIME = 1800;
 	}
 }
 
@@ -123,7 +128,6 @@ void RenderTimer() {
 	if (timerActive) {
 		if (timeLeft > 0) {
 			char timeStr[9];
-			
 				int xBufferSpace = 20;
 					if (timeInMinutes < 10 && timeInSeconds < 10) {
 						sprintf(timeStr, "0%.0f:0%.0f", timeInMinutes, timeInSeconds);
