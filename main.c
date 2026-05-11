@@ -10,7 +10,8 @@
 
 bool timerActive = false;
 bool realTime = false;
-int TIME = 1500;
+bool timerPause = false;
+int TIME = 15;
 
 double pauseOffset = 0.0;
 double pauseStart = 0.0;
@@ -24,13 +25,14 @@ Vector2 lastPos = { 0 };  // add this
 bool isTouching = false;
 const float minDistance = 50.0f;
 
+
 Vector2 TransformTouch(Vector2 raw) {
     // Physical screen is 480x800, logical is 800x480
     // For 90° clockwise rotation:
     return (Vector2){ raw.y, SCREEN_HEIGHT - raw.x };
 }
 
-void HandleInput() {
+void HandleInput() { 
     // Keyboard/gamepad
     if (IsGamepadButtonPressed(0, GAMEPAD_BUTTON_MIDDLE_RIGHT) && IsGamepadButtonPressed(0, GAMEPAD_BUTTON_MIDDLE_LEFT))
         CloseWindow();
@@ -68,13 +70,29 @@ void HandleInput() {
         } else if (len > minDistance) {
             if (fabsf(delta.x) > fabsf(delta.y)) {
                 // Horizontal swipe
-                if (delta.x > 0) { realTime = false;}
-                else { realTime = true;}
+                if (delta.x > 0) { 
+					realTime = false;
+				}
+                else { 
+					realTime = true;
+				}
             } else {
                 // Vertical swipe
-                if (delta.y < 0) TIME += 60;  // swipe up = more time
-                else TIME -= 60;              // swipe down = less time
-                if (TIME < 60) TIME = 60;     // clamp minimum to 1 min
+                if (delta.y < 0) {
+					TIME += 60;
+					double elapsed = GetTime() - pauseOffset;
+					timeLeft = TIME -  (int)elapsed;
+					timeInMinutes = timeLeft / 60;
+
+				} 
+                else TIME -= 60;              
+                if (TIME < 60) {
+					TIME = 60; 
+					double elapsed = GetTime() - pauseOffset;
+					timeLeft = TIME -  (int)elapsed;
+					timeInMinutes = timeLeft / 60;
+
+				}
             }
         }
         isTouching = false;
@@ -95,53 +113,66 @@ void CountDown() {
 		timeInMinutes = timeLeft / 60;
 		timeInSeconds = timeLeft % 60;
 	}
+	if (timeLeft <= 0) {
+		timerPause = true;
+		timeLeft = 300;
+	}
 }
 
 void RenderTimer() {
 	if (timerActive) {
 		if (timeLeft > 0) {
+			char timeStr[9];
+			
 				int xBufferSpace = 20;
 					if (timeInMinutes < 10 && timeInSeconds < 10) {
-						DrawText(TextFormat("0%.0f:0%.0f", timeInMinutes, timeInSeconds), SCREEN_WIDTH / 2 - TEXT_SIZE - xBufferSpace - 15, SCREEN_HEIGHT / 2 - xBufferSpace - 20, TEXT_SIZE, BLACK);
+						sprintf(timeStr, "0%.0f:0%.0f", timeInMinutes, timeInSeconds);
+						int margin = MeasureText(timeStr, TEXT_SIZE);
+						DrawText(TextFormat("0%.0f:0%.0f", timeInMinutes, timeInSeconds), SCREEN_WIDTH / 2 - margin / 2, SCREEN_HEIGHT / 2 - xBufferSpace - 45, TEXT_SIZE, BLACK);
 					}
 					else if (timeInMinutes < 10) {
-						DrawText(TextFormat("0%.0f:%.0f", timeInMinutes, timeInSeconds), SCREEN_WIDTH / 2 - TEXT_SIZE - xBufferSpace- 15, SCREEN_HEIGHT / 2 - xBufferSpace - 20, TEXT_SIZE, BLACK);
+						sprintf(timeStr, "0%.0f:%.0f", timeInMinutes, timeInSeconds);
+						int margin = MeasureText(timeStr, TEXT_SIZE);
+						DrawText(TextFormat("0%.0f:%.0f", timeInMinutes, timeInSeconds), SCREEN_WIDTH / 2 - margin / 2, SCREEN_HEIGHT / 2 - xBufferSpace - 45, TEXT_SIZE, BLACK);
 					}
 					else if (timeInSeconds < 10) {
-						DrawText(TextFormat("%.0f:0%.0f", timeInMinutes, timeInSeconds), SCREEN_WIDTH / 2 - TEXT_SIZE - xBufferSpace- 15, SCREEN_HEIGHT / 2 - xBufferSpace - 20, TEXT_SIZE, BLACK);
+						sprintf(timeStr, "%.0f:0%.0f", timeInMinutes, timeInSeconds);
+						int margin = MeasureText(timeStr, TEXT_SIZE);
+						DrawText(TextFormat("%.0f:0%.0f", timeInMinutes, timeInSeconds), SCREEN_WIDTH / 2 - margin / 2, SCREEN_HEIGHT / 2 - xBufferSpace - 45, TEXT_SIZE, BLACK);
 					}
 					else {
-						DrawText(TextFormat("%.0f:%.0f", timeInMinutes, timeInSeconds), SCREEN_WIDTH / 2 - TEXT_SIZE - xBufferSpace- 15, SCREEN_HEIGHT / 2 - xBufferSpace - 20, TEXT_SIZE, BLACK);
+						sprintf(timeStr, "%.0f:%.0f", timeInMinutes, timeInSeconds);
+						int margin = MeasureText(timeStr, TEXT_SIZE);
+						DrawText(TextFormat("%.0f:%.0f", timeInMinutes, timeInSeconds), SCREEN_WIDTH / 2 - margin / 2, SCREEN_HEIGHT / 2 - xBufferSpace - 45, TEXT_SIZE, BLACK);
 					}
 				} else {
-					DrawText("00:00", SCREEN_WIDTH / 2 - TEXT_SIZE, SCREEN_HEIGHT / 2, TEXT_SIZE, RED);
+					int margin = MeasureText("00:00", TEXT_SIZE);
+					DrawText("00:00", SCREEN_WIDTH / 2 - TEXT_SIZE - margin / 2, SCREEN_HEIGHT / 2, TEXT_SIZE, RED);
 				}
 	} else {
-		int x = SCREEN_WIDTH / 2 - TEXT_SIZE - 35;
-		int y = SCREEN_HEIGHT / 2 - 40;
+		int x = SCREEN_WIDTH / 2 - 50;
+		int y = SCREEN_HEIGHT / 2 - 65;
 
-		// Format minutes and seconds separately
 		char mins[8], secs[8];
 		sprintf(mins, (int)timeInMinutes < 10 ? "0%.0f" : "%.0f", timeInMinutes);
 		sprintf(secs, (int)timeInSeconds < 10 ? "0%.0f" : "%.0f", timeInSeconds);
 
-		// Measure text widths for precise placement
 		int minsWidth = MeasureText(mins, TEXT_SIZE) + 18;
 		int colonWidth = MeasureText(":", TEXT_SIZE) + 18;
 
-		DrawText(mins, x, y, TEXT_SIZE, BLACK);
+		DrawText(mins, x / 2, y, TEXT_SIZE, BLACK);
 
 		// Only draw colon when timer is active OR on even seconds (blink when paused)
 		if (timerActive || (int)GetTime() % 2 == 0) {
-			DrawText(":", x + minsWidth, y, TEXT_SIZE, BLACK);
+			DrawText(":", x / 2 + minsWidth, y, TEXT_SIZE, BLACK);
 		} else {
-			DrawText(":", x + minsWidth, y, TEXT_SIZE, GRAY);
+			DrawText(":", x  / 2 + minsWidth, y, TEXT_SIZE, GRAY);
 		}
 
-		DrawText(secs, x + minsWidth + colonWidth, y, TEXT_SIZE, BLACK);
+		DrawText(secs, x / 2 + minsWidth + colonWidth, y, TEXT_SIZE, BLACK);
 	}
 			
-	
+	// Debug
 	int touches = GetTouchPointCount();  // how many fingers currently touching
 
 	for (int i = 0; i < touches; i++)
@@ -162,18 +193,22 @@ void RenderLocalTime() {
     char timeStr[9];
     sprintf(timeStr, "%02d:%02d:%02d", t->tm_hour, t->tm_min, t->tm_sec);
 
-	int margin = MeasureText(timeStr, 100);
+	int margin = MeasureText(timeStr, TEXT_SIZE);
 
-    DrawText(timeStr, SCREEN_WIDTH / 2 - margin + 75, SCREEN_HEIGHT / 2 - 50, 160, BLACK);
+    DrawText(timeStr, SCREEN_WIDTH / 2 - margin / 2, SCREEN_HEIGHT / 2 - 65, TEXT_SIZE, BLACK);
 }
 
 
 int main() {
+	timeLeft = TIME;
+	timeInMinutes = timeLeft / 60;
+	timeInSeconds = timeLeft % 60;
 	SetGesturesEnabled(GESTURE_TAP | GESTURE_SWIPE_UP | GESTURE_SWIPE_DOWN | GESTURE_SWIPE_RIGHT | GESTURE_SWIPE_LEFT);
   	SetConfigFlags(FLAG_FULLSCREEN_MODE);
 	InitWindow(0, 0, "Pomodoro Timer");
   	SetTargetFPS(60);
 	RenderTexture target = LoadRenderTexture(SCREEN_WIDTH, SCREEN_HEIGHT);
+
 
 	while (!WindowShouldClose()) {
 		HandleInput();
